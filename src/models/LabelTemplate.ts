@@ -2,6 +2,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ILabelTemplate extends Document {
+  id: string;
   userId: string;
   name: string;
   width: number;
@@ -10,6 +11,7 @@ export interface ILabelTemplate extends Document {
 }
 
 const LabelTemplateSchema: Schema<ILabelTemplate> = new Schema({
+  id:{ type: String, required: true, unique: true ,default: () => `temp-${Math.random().toString(36).substring(2, 11)}`},
   userId: { type: String, required: true },
   name: { type: String, required: true },
   width: { type: Number, required: true },

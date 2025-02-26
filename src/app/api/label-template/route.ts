@@ -1,5 +1,6 @@
 import connectDB from "@/lib/db";
 import LabelTemplate, { ILabelTemplate } from "@/models/LabelTemplate";
+import { log } from "console";
 import { NextResponse } from "next/server";
 
 // Create or Update Label Template
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(template, { status: 201 });
-  } catch (error:any) {
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -33,7 +34,19 @@ export async function GET(req: Request) {
   await connectDB();
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
+  console.log(userId);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+  }
+  try {
+    const templates = await LabelTemplate.find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
 
-  const template = await LabelTemplate.findOne({ user: userId });
-  return NextResponse.json(template, { status: 200 });
+    // Return the templates directly as an array to match what the component expects
+    return NextResponse.json(templates);
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

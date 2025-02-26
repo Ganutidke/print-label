@@ -17,6 +17,7 @@ interface Product {
 
 interface LabelTemplate {
   _id: string;
+  id: string;
   name: string;
   width: number;
   height: number;
@@ -46,7 +47,7 @@ export default function LabelGenerator({ userId }: { userId: string }) {
 
   // A4 dimensions in mm
   const A4_WIDTH_MM = 210;
-  const A4_HEIGHT_MM = 297;
+  const A4_HEIGHT_MM = 297 ;
 
   useEffect(() => {
     if (!userId) return;
@@ -56,20 +57,50 @@ export default function LabelGenerator({ userId }: { userId: string }) {
         // Fetch products
         const productRes = await fetch(`/api/products?userId=${userId}`);
         const productData = await productRes.json();
-        setProducts(productData);
+        
+        // Make sure products have all required fields
+        if (Array.isArray(productData)) {
+          setProducts(productData.map(product => ({
+            id: product.id || product._id || `temp-${Math.random().toString(36).substring(2, 11)}`,
+            brandName: product.brandName || "Brand",
+            productName: product.productName || "Product",
+            packetSize: product.packetSize || "",
+            unit: product.unit || "",
+            packetPrice: product.packetPrice || 0,
+            pricePerUnit: product.pricePerUnit || 0
+          })));
+        }
         
         // Fetch label templates
         const labelRes = await fetch(`/api/label-template?userId=${userId}`);
         const labelData = await labelRes.json();
         console.log(labelData);
-        if (Array.isArray(labelData) && labelData.length > 0) {
-          setLabelTemplates(labelData);
-          setSelectedTemplate(labelData[0]._id);
+        
+        // Check if templates are in the expected format
+        let templatesArray: LabelTemplate[] = [];
+        
+        if (Array.isArray(labelData)) {
+          // Direct array response
+          templatesArray = labelData;
+        } else if (labelData.templates && Array.isArray(labelData.templates)) {
+          // Response with templates property
+          templatesArray = labelData.templates;
+        }
+        
+        if (templatesArray.length > 0) {
+          // Fix any missing _id fields (use id if available)
+          templatesArray = templatesArray.map(template => ({
+            ...template,
+            _id: template._id || template.id || `temp-${Math.random().toString(36).substring(2, 11)}`
+          }));
+          
+          setLabelTemplates(templatesArray);
+          setSelectedTemplate(templatesArray[0]._id);
         } else {
           // Default templates in case none are found in the database
           const defaultTemplates = [
-            { _id: "default-1", name: "Basic", width: 100, height: 50, createdAt: new Date() },
-            { _id: "default-2", name: "With Barcode", width: 100, height: 70, createdAt: new Date() }
+            { _id: "default-1", id: "default-1", name: "Basic", width: 100, height: 50, createdAt: new Date() },
+            { _id: "default-2", id: "default-2", name: "With Details", width: 100, height: 70, createdAt: new Date() }
           ];
           setLabelTemplates(defaultTemplates);
           setSelectedTemplate(defaultTemplates[0]._id);
@@ -78,8 +109,8 @@ export default function LabelGenerator({ userId }: { userId: string }) {
         console.error("Error fetching data:", error);
         // Set default templates if fetch fails
         const defaultTemplates = [
-          { _id: "default-1", name: "Basic", width: 100, height: 50, createdAt: new Date() },
-          { _id: "default-2", name: "With Barcode", width: 100, height: 70, createdAt: new Date() }
+          { _id: "default-1", id: "default-1", name: "Basic", width: 100, height: 50, createdAt: new Date() },
+          { _id: "default-2", id: "default-2", name: "With Details", width: 100, height: 70, createdAt: new Date() }
         ];
         setLabelTemplates(defaultTemplates);
         setSelectedTemplate(defaultTemplates[0]._id);
@@ -91,12 +122,22 @@ export default function LabelGenerator({ userId }: { userId: string }) {
     fetchData();
   }, [userId]);
 
-  // Calculate scale factor when preview container size changes
+  // Calculate scale factor when component mounts and whenever window resizes
   useEffect(() => {
-    if (preview1Ref.current) {
-      const containerWidth = preview1Ref.current.clientWidth;
-      setScale(containerWidth / A4_WIDTH_MM);
+    function updateScale() {
+      if (preview1Ref.current) {
+        // Use a larger portion of the available width
+        const containerWidth = preview1Ref.current.clientWidth * 0.9;
+        const newScale = containerWidth / A4_WIDTH_MM;
+        setScale(newScale);
+      }
     }
+    
+    updateScale();
+    
+    // Update scale on window resize
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
   }, []);
 
   // Get current template dimensions
@@ -129,16 +170,6 @@ export default function LabelGenerator({ userId }: { userId: string }) {
   // Remove product from Preview 1
   const removeProduct = (index: number) => {
     setSelectedProducts((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  // Generate random barcode for display purposes
-  const generateBarcode = (productId: string) => {
-    // Check if productId is defined before processing
-    if (!productId) return "0000000000000"; // Return default barcode if productId is undefined
-    
-    // Convert product ID to a numeric string
-    const numericId = productId.split('').map(c => c.charCodeAt(0) % 10).join('');
-    return numericId.padStart(13, '0').substring(0, 13);
   };
 
   // Download Live Preview 2 as PDF (A4 Size)
@@ -185,13 +216,21 @@ export default function LabelGenerator({ userId }: { userId: string }) {
   // Render label content based on template type and dimensions
   const renderLabelContent = (product: Product, templateId: string, isPreview: boolean) => {
     if (!product || !product.id) {
-      // Check if product is defined and has an id property
-      return <div className="h-full flex items-center justify-center text-red-500">Invalid product data</div>;
+      console.error("Invalid product data:", product);
+      // Create a default product with required fields to prevent errors
+      product = {
+        id: `default-${Date.now()}`,
+        brandName: "Brand",
+        productName: "Product",
+        packetSize: "",
+        unit: "",
+        packetPrice: 0,
+        pricePerUnit: 0
+      };
     }
     
     // Get template dimensions to help with styling
     const template = labelTemplates.find(t => t._id === templateId) || getCurrentTemplate();
-    const barcode = generateBarcode(product.id);
     
     // Check if it's a narrow label (likely a price tag)
     const isNarrow = template.width < template.height;
@@ -202,101 +241,62 @@ export default function LabelGenerator({ userId }: { userId: string }) {
     // Determine if the template is large enough for detailed information
     const isDetailed = template.width >= 110 && template.height >= 70;
     
+    // Scale factor for text size based on template dimensions
+    const textScale = Math.min(template.width / 100, template.height / 50);
+    const fontSize = Math.max(0.8, textScale);
+    
     if (isNarrow) {
       // Price tag style
       return (
         <div className="h-full flex flex-col justify-between border-2 border-gray-800 p-1">
           <div className="text-center border-b border-gray-800 pb-1">
-            <p className="font-bold text-sm md:text-base uppercase">{product.brandName}</p>
+            <p className="font-bold uppercase" style={{fontSize: `${fontSize * 1.2}rem`}}>{product.brandName}</p>
           </div>
           <div className="text-center py-1">
-            <p className="text-xs md:text-sm">{product.productName}</p>
+            <p style={{fontSize: `${fontSize}rem`}}>{product.productName}</p>
             {product.packetSize && (
-              <p className="text-xs">{product.packetSize} {product.unit}</p>
+              <p style={{fontSize: `${fontSize * 0.9}rem`}}>{product.packetSize} {product.unit}</p>
             )}
           </div>
-          <div className="text-center border-t border-gray-800 pt-1">
-            <p className="text-xs">Item #: {product.id.substring(0, 8)}</p>
-            {!isSmall && (
-              <div className="barcode mt-1">
-                <svg width="90%" height="20" viewBox="0 0 100 20">
-                  {barcode.split('').map((digit, i) => (
-                    <rect 
-                      key={i} 
-                      x={i * 7} 
-                      y={0} 
-                      width={(parseInt(digit) % 3) + 1} 
-                      height={20} 
-                      fill="black" 
-                    />
-                  ))}
-                </svg>
-              </div>
-            )}
-            <p className="text-lg font-bold mt-2">₹{product.packetPrice.toFixed(2)}</p>
+          <div className="text-center border-t border-gray-800 pt-1 pb-11">
+            <p className="font-bold mt-2" style={{fontSize: `${fontSize * 1.4}rem`}}>₹{product.packetPrice.toFixed(2)}</p>
           </div>
         </div>
       );
     } else if (isDetailed) {
-      // Detailed label with barcode and more information
+      // Detailed label with more information
       return (
-        <div className="h-full flex flex-col justify-between border border-gray-300 rounded p-1">
+        <div className="h-full flex flex-col justify-between border border-gray-800 rounded p-1">
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-semibold text-xs md:text-sm">{product.brandName}</p>
-              <p className="text-xs md:text-sm truncate max-w-full">{product.productName}</p>
+              <p className="font-semibold" style={{fontSize: `${fontSize}rem`}}>{product.brandName}</p>
+              <p className="truncate max-w-full" style={{fontSize: `${fontSize}rem`}}>{product.productName}</p>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold">₹{product.packetPrice.toFixed(2)}</p>
+              <p className="font-bold" style={{fontSize: `${fontSize * 1.4}rem`}}>₹{product.packetPrice.toFixed(2)}</p>
               {product.pricePerUnit > 0 && (
-                <p className="text-xs">₹{product.pricePerUnit.toFixed(2)}/{product.unit}</p>
+                <p style={{fontSize: `${fontSize * 0.8}rem`}}>₹{Number(product.pricePerUnit).toFixed(2)}/{product.unit}</p>
               )}
             </div>
           </div>
           <div className="flex flex-col items-center mt-2">
-            <div className="barcode mt-1 w-full">
-              <svg width="100%" height="20" viewBox="0 0 120 20">
-                {barcode.split('').map((digit, i) => (
-                  <rect 
-                    key={i} 
-                    x={i * 8} 
-                    y={0} 
-                    width={(parseInt(digit) % 3) + 1} 
-                    height={20} 
-                    fill="black" 
-                  />
-                ))}
-              </svg>
-              <p className="text-xs text-center tracking-wider mt-1">{barcode}</p>
-            </div>
+            <p className="text-center" style={{fontSize: `${fontSize * 0.8}rem`}}>Item #: {product.id.substring(0, 8)}</p>
+            {product.packetSize && (
+              <p style={{fontSize: `${fontSize * 0.9}rem`}}>{product.packetSize} {product.unit}</p>
+            )}
           </div>
         </div>
       );
     } else if (!isSmall) {
-      // Standard label with barcode
+      // Standard label
       return (
-        <div className="h-full flex flex-col justify-between p-1">
+        <div className="h-full flex flex-col border border-gray-800 justify-between p-1">
           <div className="text-center">
-            <p className="font-semibold text-xs md:text-sm">{product.brandName}</p>
-            <p className="text-xs md:text-sm truncate max-w-full">{product.productName}</p>
+            <p className="font-semibold" style={{fontSize: `${fontSize}rem`}}>{product.brandName}</p>
+            <p className="truncate max-w-full" style={{fontSize: `${fontSize}rem`}}>{product.productName}</p>
           </div>
           <div className="flex flex-col items-center">
-            <div className="barcode mt-1 text-center">
-              <svg width="90%" height="20" viewBox="0 0 100 20">
-                {barcode.split('').map((digit, i) => (
-                  <rect 
-                    key={i} 
-                    x={i * 7} 
-                    y={0} 
-                    width={(parseInt(digit) % 3) + 1} 
-                    height={20} 
-                    fill="black" 
-                  />
-                ))}
-              </svg>
-              <p className="text-xs tracking-wider mt-1">{barcode}</p>
-            </div>
-            <p className="text-sm font-bold mt-1">₹{product.packetPrice.toFixed(2)}</p>
+            <p className="font-bold mt-1" style={{fontSize: `${fontSize * 1.2}rem`}}>₹{product.packetPrice.toFixed(2)}</p>
           </div>
         </div>
       );
@@ -304,9 +304,9 @@ export default function LabelGenerator({ userId }: { userId: string }) {
       // Basic small label
       return (
         <div className="h-full flex flex-col justify-center items-center">
-          <p className="font-semibold text-xs md:text-sm">{product.brandName}</p>
-          <p className="text-xs md:text-sm truncate max-w-full">{product.productName}</p>
-          <p className="text-xs md:text-sm mt-1">₹{product.packetPrice.toFixed(2)}</p>
+          <p className="font-semibold" style={{fontSize: `${fontSize}rem`}}>{product.brandName}</p>
+          <p className="truncate max-w-full" style={{fontSize: `${fontSize}rem`}}>{product.productName}</p>
+          <p className="mt-1" style={{fontSize: `${fontSize}rem`}}>₹{product.packetPrice.toFixed(2)}</p>
         </div>
       );
     }
@@ -379,24 +379,25 @@ export default function LabelGenerator({ userId }: { userId: string }) {
           </div>
 
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Live Preview 1 (Editable) */}
+            {/* Live Preview 1 (Editable) - Fixed height */}
             <div className="w-full md:w-1/2 border p-4">
               <h3 className="text-lg font-semibold">Design View (Editable)</h3>
               <div 
                 ref={preview1Ref}
-                className="relative border bg-gray-50 overflow-hidden"
+                className="relative border bg-gray-500 overflow-hidden"
                 style={{
-                  width: "100%",
-                  height: "600px",
+                  width: "100%", 
+                  height: "600px", // Fixed height for both previews
                   position: "relative",
-                  boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)"
+                  boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
+                  overflowY: "auto" // Add scrolling for overflow
                 }}
               >
                 <div 
                   className="absolute bg-white" 
                   style={{
-                    width: `${A4_WIDTH_MM * scale}px`,
-                    height: `${A4_HEIGHT_MM * scale}px`,
+                    width: `${A4_WIDTH_MM * scale*2}px`,
+                    height: `${A4_HEIGHT_MM * scale*2}px`,
                     transform: "scale(1)",
                     transformOrigin: "top left"
                   }}
@@ -473,33 +474,42 @@ export default function LabelGenerator({ userId }: { userId: string }) {
               </div>
             </div>
 
-            {/* Live Preview 2 (Read-Only & Downloadable) */}
+            {/* Live Preview 2 (Read-Only & Downloadable) - Fixed height */}
             <div className="w-full md:w-1/2 border p-4 mt-6 md:mt-0">
               <h3 className="text-lg font-semibold">Print Preview (A4)</h3>
               <div 
-                ref={preview2Ref}
-                className="relative bg-white"
+                className="relative overflow-hidden bg-gray-600"
                 style={{
-                  width: `${A4_WIDTH_MM * scale}px`,
-                  height: `${A4_HEIGHT_MM * scale}px`,
-                  boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)"
+                  width: "100%",
+                  height: "600px", // Fixed height to match Design View
+                  overflowY: "auto" // Add scrolling for overflow
                 }}
               >
-                {selectedProducts.map(({ product, width, height, x, y, templateId }, index) => (
-                  <div
-                    key={`preview-${product?.id || index}-${index}`}
-                    style={{
-                      width: width * scale,
-                      height: height * scale,
-                      left: x * scale,
-                      top: y * scale,
-                      position: "absolute",
-                    }}
-                    className="bg-white shadow-sm overflow-hidden"
-                  >
-                    {renderLabelContent(product, templateId, false)}
-                  </div>
-                ))}
+                <div 
+                  ref={preview2Ref}
+                  className="relative bg-white"
+                  style={{
+                    width: `${A4_WIDTH_MM * scale*2}px`,
+                    height: `${A4_HEIGHT_MM * scale*2}px`,
+                    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)"
+                  }}
+                >
+                  {selectedProducts.map(({ product, width, height, x, y, templateId }, index) => (
+                    <div
+                      key={`preview-${product?.id || index}-${index}`}
+                      style={{
+                        width: width * scale,
+                        height: height * scale,
+                        left: x * scale,
+                        top: y * scale,
+                        position: "absolute",
+                      }}
+                      className="bg-white shadow-sm overflow-hidden"
+                    >
+                      {renderLabelContent(product, templateId, false)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -525,6 +535,19 @@ export default function LabelGenerator({ userId }: { userId: string }) {
           </div>
         ))}
       </div>
+
+      {/* Show debug info if no products or templates found */}
+      {products.length === 0 && !loading && (
+        <div className="p-3 mt-4 bg-yellow-50 border border-yellow-300 rounded">
+          <p className="text-yellow-800">No products found. Please add products first or check your API endpoint.</p>
+        </div>
+      )}
+
+      {labelTemplates.length === 0 && !loading && (
+        <div className="p-3 mt-4 bg-yellow-50 border border-yellow-300 rounded">
+          <p className="text-yellow-800">No label templates found. Using default templates instead.</p>
+        </div>
+      )}
 
       {/* Download Button */}
       {selectedProducts.length > 0 && (
