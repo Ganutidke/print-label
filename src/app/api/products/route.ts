@@ -13,8 +13,8 @@ export async function POST(req: Request) {
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const userId = session.user.id; // Ensure userId is available
+    const userId = (session.user as { id: string }).id;
+    // const userId = session.user?.id; // Ensure userId is available
     const { brandName, productName, packetSize, unit, packetPrice, pricePerUnit,height,width } = await req.json();
 
     // Debugging logs
