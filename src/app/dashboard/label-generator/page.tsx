@@ -9,8 +9,8 @@ export default async function LabelGeneratorPage() {
       if (!session || !session.user) {
         redirect("/login");
       }
-    
-      const userId = session.user.id as string;
+    const userId = (session.user as { id: string }).id;
+      // const userId = session.user.id as string;
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Label Generator</h1>

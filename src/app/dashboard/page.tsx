@@ -13,8 +13,8 @@ export default async function Dashboard() {
     redirect("/login");
   }
 
-  const userId = session.user.id as string; // Ensure `id` is correct
-
+  // const userId = session.user.id as string; // Ensure `id` is correct
+const userId = (session.user as { id: string }).id;
 
   return (
     <div className="min-h-screen bg-gray-100">

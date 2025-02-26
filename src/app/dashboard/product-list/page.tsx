@@ -11,8 +11,8 @@ const page = async () => {
   if (!session || !session.user) {
     redirect("/login");
   }
-
-  const userId = session.user.id as string;
+const userId = (session.user as { id: string }).id;
+  // const userId = session.user.id as string;
   return (
     <>
       <Navbar />
