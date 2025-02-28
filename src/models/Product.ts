@@ -9,8 +9,6 @@ export interface IProduct extends Document {
   unit: string;
   packetPrice: number;
   pricePerUnit: string;
-  height: number;  // New field for label height
-  width: number;   // New field for label width
   createdAt: Date;
 }
 
@@ -23,8 +21,6 @@ const ProductSchema: Schema<IProduct> = new Schema({
   unit: { type: String, required: true },
   packetPrice: { type: Number, required: true },
   pricePerUnit: { type: String, required: true },
-  height: { type: Number, required: true, default: 100 }, // Default label height
-  width: { type: Number, required: true, default: 50 },   // Default label width
   createdAt: { type: Date, default: Date.now }
 });
 

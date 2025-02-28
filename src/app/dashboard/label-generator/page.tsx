@@ -14,8 +14,9 @@ export default async function LabelGeneratorPage() {
       // const userId = session.user.id as string;
   return (
     <>
-      <Navbar/>
+    <Navbar/>
     <div className="p-6">
+
       <h1 className="text-2xl font-semibold mb-4">Label Generator</h1>
       <LabelGenerator userId={userId} />
     </div>

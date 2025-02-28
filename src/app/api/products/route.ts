@@ -15,13 +15,13 @@ export async function POST(req: Request) {
     }
     const userId = (session.user as { id: string }).id;
     // const userId = session.user?.id; // Ensure userId is available
-    const { brandName, productName, packetSize, unit, packetPrice, pricePerUnit,height,width } = await req.json();
+    const { brandName, productName,productNameEst, packetSize, unit, packetPrice, pricePerUnit} = await req.json();
 
     // Debugging logs
-    console.log("Received Data:", { brandName, productName, packetSize, unit, packetPrice, pricePerUnit, userId,height,width });
+    console.log("Received Data:", { brandName, productName,productNameEst, packetSize, unit, packetPrice, pricePerUnit, userId });
 
     // Validation
-    if (!brandName || !productName || !packetSize || !unit || !packetPrice || !pricePerUnit) {
+    if (!brandName || !productName || !packetSize || !unit || !packetPrice || !pricePerUnit || !productNameEst) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
 
@@ -30,11 +30,10 @@ export async function POST(req: Request) {
       brandName,
       productName,
       packetSize,
+      productNameEst,
       unit,
       packetPrice,
       pricePerUnit,
-      height, 
-      width
     });
 
     await newProduct.save();
@@ -96,18 +95,18 @@ export async function PUT(req: Request) {
     try {
       await connectDB();
       
-      const { productId, brandName, productName, packetSize, unit, packetPrice, pricePerUnit, height, width } = await req.json();
+      const { productId, brandName, productName, packetSize, unit, packetPrice, pricePerUnit} = await req.json();
   
       if (!productId) {
         console.error("Product ID missing in request");
         return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
       }
   
-      console.log("Updating Product:", { productId, brandName, productName, packetSize, unit, packetPrice, pricePerUnit, height, width });
+      console.log("Updating Product:", { productId, brandName, productName, packetSize, unit, packetPrice, pricePerUnit });
   
       const updatedProduct = await Product.findByIdAndUpdate(
         productId,
-        { brandName, productName, packetSize, unit, packetPrice, pricePerUnit, height, width },
+        { brandName, productName, packetSize, unit, packetPrice, pricePerUnit},
         { new: true } // Return the updated product
       );
   

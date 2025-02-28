@@ -26,14 +26,12 @@ export default function UploadExcel({ userId }: UploadExcelProps) {
 
       const formattedData = parsedData.map((item: any) => ({
         userId,
-        brandName: item.CompanyName || "Unknown Brand",
-        productName: item.ProductDetail,
-        packetSize: item.TotalVolume,
-        unit: item.VolumeUnit?.toLowerCase() || "unit",
-        packetPrice: item.ProductPrice,
-        pricePerUnit: item.PricePerVolumeUnit,
-        height: item.Height || 100, // Default height
-        width: item.Width || 50, // Default width
+        brandName: item["Brand name"] || "Unknown Brand", // Map to Brand Name
+        productName: item["Product name"] || "", // Map to Product Name
+        productNameEst: item["Product description"] || "", // Map to Product Description
+        packetPrice: item["Pack price"] || 0, // Map to Pack Price
+        packetSize: item["Pack size"] || 0, // Map to Pack Size
+        unit: item["Pack unit"]?.toLowerCase() || "unit", // Map to Pack Unit
       }));
 
       const response = await fetch("/api/products/bulk-upload", {
@@ -76,9 +74,7 @@ export default function UploadExcel({ userId }: UploadExcelProps) {
         onClick={handleFileUpload}
         disabled={uploading || !file}
         className={`mt-2 w-full text-white px-4 py-2 rounded-lg transition ${
-          uploading
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
+          uploading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
         {uploading ? "Uploading..." : "Upload"}

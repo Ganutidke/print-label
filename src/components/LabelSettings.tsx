@@ -7,8 +7,8 @@ interface LabelSettingsProps {
 
 export default function LabelSettings({ userId }: LabelSettingsProps) {
   const [name, setName] = useState("");
-  const [width, setWidth] = useState(100);
-  const [height, setHeight] = useState(50);
+  const [width, setWidth] = useState(60);
+  const [height, setHeight] = useState(40);
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Array<{name: string, width: number, height: number}>>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -121,7 +121,7 @@ export default function LabelSettings({ userId }: LabelSettingsProps) {
           
           <div className="mb-2">
             <label htmlFor="templateWidth" className="block text-sm font-medium text-gray-700 mb-1">
-              Width (px)
+              Width (mm)
             </label>
             <input
               id="templateWidth"
@@ -134,7 +134,7 @@ export default function LabelSettings({ userId }: LabelSettingsProps) {
           
           <div className="mb-2">
             <label htmlFor="templateHeight" className="block text-sm font-medium text-gray-700 mb-1">
-              Height (px)
+              Height (mm)
             </label>
             <input
               id="templateHeight"

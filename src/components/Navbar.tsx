@@ -1,10 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import {  useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export default function Navbar() {
+export default  function Navbar() {
   const router = useRouter();
+
+
+    
 
   const handleLogout = async () => {
     await signOut();
@@ -25,6 +30,16 @@ export default function Navbar() {
             </button>
           </li>
           <li>
+            <button onClick={() => router.push("/dashboard/templates")} className="hover:text-gray-300">
+              Create Template
+            </button>
+          </li>
+          <li>
+            <button onClick={() => router.push("/dashboard/uploadExcel")} className="hover:text-gray-300">
+              Upload excel
+            </button>
+          </li>
+          <li>
             <button onClick={() => router.push("/dashboard/product-list")} className="hover:text-gray-300">
               Product List
             </button>
@@ -37,6 +52,7 @@ export default function Navbar() {
           <li>
             <button onClick={handleLogout} className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">
               Logout
+              {/* {session && <span> ({session.user?.name})</span>} */}
             </button>
           </li>
         </ul>
