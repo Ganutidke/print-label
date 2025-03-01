@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
             }
             .brand {
               font-weight: normal;
-            font-size: 9pt;
+            font-size: 10pt;
             text-align: center;
             }
             .product-container {
@@ -79,15 +79,15 @@ export async function POST(req: NextRequest) {
             }
             .product {
               font-weight: bold;
-              font-size: 12pt;
+              font-size: 14pt;
             }
             .price {
-              font-size: 14pt;
+              font-size: 18pt;
               text-align: center;
               font-weight: bold;
             }
             .details {
-              font-size: 8pt;
+              font-size: 11pt;
               display: flex;
               justify-content: space-between;
               color: #555;
@@ -108,7 +108,8 @@ export async function POST(req: NextRequest) {
                   </div>
                   <div class="price">€ ${(product.packetPrice || 0).toFixed(2)}</div>
                   <div class="details">
-                    <div>${convertedUnit.value} ${convertedUnit.unit}</div>
+                    <div>${product.packetSize} ${product.unit}</div>
+
                     <div>€ ${product.pricePerUnit}/${convertedUnit.unit}</div>
                   </div>
                 </div>
