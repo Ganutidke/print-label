@@ -13,9 +13,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User already exists" }, { status: 400 });
   }
 
-  // Hash password and create user
+  // Hash password
   const hashedPassword = await hashPassword(password);
-  const newUser = new User({ name, email, password: hashedPassword });
+
+  // Generate unique ID
+  const uniqueId = `user-${Math.random().toString(36).substring(2, 10)}`;
+
+  // Create user with generated ID
+  const newUser = new User({
+    id: uniqueId,
+    name,
+    email,
+    password: hashedPassword,
+  });
+
   await newUser.save();
 
   return NextResponse.json({ message: "User registered successfully" }, { status: 201 });
