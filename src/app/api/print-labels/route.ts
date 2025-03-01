@@ -9,12 +9,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { templateId, products, userId } = body;
 
-    console.log("Received print request:", {
-      templateId,
-      productsCount: products?.length,
-      userId
-    });
-
     if (!templateId) {
       return NextResponse.json({ error: "Missing templateId" }, { status: 400 });
     }
@@ -31,14 +25,11 @@ export async function POST(req: NextRequest) {
       const template = await LabelTemplate.findOne({ id: templateId });
 
       if (!template) {
-        console.log(`Template not found with ID: ${templateId}`);
         return NextResponse.json({ error: "Template not found" }, { status: 404 });
       }
 
-      console.log("Found template:", template);
       
       if (template.userId !== userId) {
-        console.log(`Template ${templateId} does not belong to user ${userId}`);
         return NextResponse.json({ error: "Unauthorized access to template" }, { status: 403 });
       }
 
@@ -62,7 +53,7 @@ export async function POST(req: NextRequest) {
             .labels-container {
               display: grid;
               grid-template-columns: repeat(auto-fit, minmax(${template.width}mm, 1fr));
-              gap: 5mm;
+              gap: 1mm;
               justify-content: center;
             }
             .label {
@@ -78,8 +69,8 @@ export async function POST(req: NextRequest) {
               overflow: hidden;
             }
             .brand {
-              font-weight: bold;
-            font-size: 12pt;
+              font-weight: normal;
+            font-size: 9pt;
             text-align: center;
             }
             .product-container {
@@ -87,8 +78,8 @@ export async function POST(req: NextRequest) {
               flex-direction: column;
             }
             .product {
-              font-weight: normal;
-              font-size: 9pt;
+              font-weight: bold;
+              font-size: 12pt;
             }
             .price {
               font-size: 14pt;
@@ -118,7 +109,7 @@ export async function POST(req: NextRequest) {
                   <div class="price">€ ${(product.packetPrice || 0).toFixed(2)}</div>
                   <div class="details">
                     <div>${convertedUnit.value} ${convertedUnit.unit}</div>
-                    <div>€ ${convertedPricePerUnit}/${convertedUnit.unit}</div>
+                    <div>€ ${product.pricePerUnit}/${convertedUnit.unit}</div>
                   </div>
                 </div>
               `;
@@ -150,7 +141,7 @@ function convertUnit(unit: string, size: number) {
   const conversions: { [key: string]: { unit: string, multiplier: number } } = {
     "gm": { unit: "kg", multiplier: 0.001 },
     "ml": { unit: "ltr", multiplier: 0.001 },
-    "tk": { unit: "kg", multiplier: 1 },
+    "tk": { unit: "tg", multiplier: 1 },
   };
   
   const conversion = conversions[unit] || { unit, multiplier: 1 };

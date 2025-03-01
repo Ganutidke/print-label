@@ -12,7 +12,6 @@ const connectDB = async () => {
 
   try {
     await mongoose.connect(MONGODB_URI, { dbName: "print_labels" });
-    console.log("MongoDB Connected ✅");
   } catch (error) {
     console.error("MongoDB Connection Error ❌", error);
   }

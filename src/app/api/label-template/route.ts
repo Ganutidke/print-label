@@ -8,7 +8,6 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const { userId, name, width, height } = await req.json();
-    console.log(userId, name, width, height);
     if (!userId || !name || !width || !height) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -34,7 +33,6 @@ export async function GET(req: Request) {
   await connectDB();
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
-  console.log(userId);
   if (!userId) {
     return NextResponse.json({ error: "User ID is required" }, { status: 400 });
   }
@@ -48,5 +46,44 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Error fetching templates:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+
+
+export async function PUT(req: Request) {
+  try {
+    await connectDB();
+    const { _id, name, width, height } = await req.json();
+
+    if (!_id || !name || !width || !height) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const updatedTemplate = await LabelTemplate.findByIdAndUpdate(
+      _id,
+      { name, width, height },
+      { new: true }
+    );
+
+    return NextResponse.json(updatedTemplate);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Delete Label Template
+export async function DELETE(req: Request) {
+  try {
+    await connectDB();
+    const { id } = await req.json();
+
+    if (!id) return NextResponse.json({ error: "Template ID is required" }, { status: 400 });
+
+    await LabelTemplate.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: "Template deleted successfully" });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

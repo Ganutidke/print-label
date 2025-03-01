@@ -3,27 +3,46 @@ import connectDB from "@/lib/db";
 import Product from "@/models/Product";
 
 // Function to calculate price per unit
+// const calculatePricePerUnit = (packetSize: number, unit: string, packetPrice: number) => {
+//   if (!packetSize || !packetPrice) return { pricePerUnit: "0.00", convertedUnit: unit };
+
+//   let pricePerUnit;
+//   let convertedUnit = unit; // Default unit
+
+//   if (unit === "gm") {
+//     pricePerUnit = (packetPrice / packetSize) * 1000; // Convert gm to kg
+//     convertedUnit = "kg";
+//   } else if (unit === "ml") {
+//     pricePerUnit = (packetPrice / packetSize) * 1000; // Convert ml to ltr
+//     convertedUnit = "ltr";
+//   } else if (unit === "tk") {
+//     pricePerUnit = packetPrice / packetSize; // Convert tk as per unit
+//     convertedUnit = "kg";
+//   } else {
+//     pricePerUnit = packetPrice / packetSize; // Default calculation
+//   }
+
+//   return { pricePerUnit: pricePerUnit.toFixed(2), convertedUnit };
+// };
+
 const calculatePricePerUnit = (packetSize: number, unit: string, packetPrice: number) => {
-  if (!packetSize || !packetPrice) return { pricePerUnit: "0.00", convertedUnit: unit };
+  if (!packetSize || !packetPrice) return { pricePerUnit: "0.00" };
 
   let pricePerUnit;
-  let convertedUnit = unit; // Default unit
 
   if (unit === "gm") {
     pricePerUnit = (packetPrice / packetSize) * 1000; // Convert gm to kg
-    convertedUnit = "kg";
   } else if (unit === "ml") {
     pricePerUnit = (packetPrice / packetSize) * 1000; // Convert ml to ltr
-    convertedUnit = "ltr";
   } else if (unit === "tk") {
-    pricePerUnit = packetPrice / packetSize; // Convert tk as per unit
-    convertedUnit = "kg";
+    pricePerUnit = packetPrice / packetSize; // Convert tk per kg
   } else {
     pricePerUnit = packetPrice / packetSize; // Default calculation
   }
 
-  return { pricePerUnit: pricePerUnit.toFixed(2), convertedUnit };
+  return { pricePerUnit: pricePerUnit.toFixed(2) }; // ✅ Keep original unit
 };
+
 
 export async function POST(req: Request) {
   try {
@@ -36,7 +55,7 @@ export async function POST(req: Request) {
 
     // Process and insert products
     const formattedProducts = products.map((product) => {
-      const { pricePerUnit, convertedUnit } = calculatePricePerUnit(
+      const { pricePerUnit } = calculatePricePerUnit(
         Number(product.packetSize),
         product.unit,
         Number(product.packetPrice)
@@ -45,7 +64,7 @@ export async function POST(req: Request) {
       return {
         ...product,
         pricePerUnit, // Automatically calculated price per unit
-        unit: convertedUnit, // Converted unit
+         // Converted unit
       };
     });
 

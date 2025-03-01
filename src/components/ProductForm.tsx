@@ -15,8 +15,6 @@ export default function ProductForm({ userId }: ProductFormProps) {
     unit: "gm", // Default unit
     packetPrice: "",
     pricePerUnit: "", // Automatically computed
-    height: "100", // Default label height
-    width: "50",  // Default label width
   });
 
   const [loading, setLoading] = useState(false);
@@ -112,8 +110,6 @@ const calculatePricePerUnit = (packetSize: string, unit: string, packetPrice: st
       unit: "gm",
       packetPrice: "",
       pricePerUnit: "",
-      height: "100",
-      width: "50",
     });
 
     setLoading(false);

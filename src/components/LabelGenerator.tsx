@@ -74,8 +74,7 @@ export default function LabelGenerator({ userId }: { userId: string }) {
         // Fetch label templates
         const labelRes = await fetch(`/api/label-template?userId=${userId}`);
         const labelData = await labelRes.json();
-        console.log(labelData);
-        
+   
         // Check if templates are in the expected format
         let templatesArray: LabelTemplate[] = [];
         
